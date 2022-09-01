@@ -2,9 +2,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import userRoute from './routes/user';
 import { connect } from 'mongoose';
+import config from 'config';
+require('dotenv').config();
 
 export class App{
     private express: express.Application;
+    //private porta = config.get<number>('porta');
     private porta = 8000;
 
     constructor(){
