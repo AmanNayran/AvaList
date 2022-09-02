@@ -1,10 +1,12 @@
 import nodemailer from 'nodemailer'
-import { host, port, user, pass } from '../config/mail.json'
 
 const transport = nodemailer.createTransport({
-    host,
-    port,
-    auth: { user, pass }
-});
+    host: "smtp.mailtrap.io",
+    port: 2525,
+    auth: { 
+        user: "6d1cce0e6deb97", 
+        pass: "fad2c2ac65cd2a" 
+    }
+})
 
-module.exports = transport;
+module.exports = transport

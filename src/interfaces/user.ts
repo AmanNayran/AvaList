@@ -1,6 +1,7 @@
-export interface UsuarioInterface {
-    _id: any | string;
-    nome?: string;
-    senha?: string;
-    email?: string;
+export interface UserInterface {
+    _id: any | string
+    name?: string
+    fone?: number
+    email?: string
+    password?: string
 }

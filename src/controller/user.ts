@@ -1,114 +1,116 @@
-import e, { Request, Response } from "express"
-import UsuarioModel from "../models/user"
+import { Request, Response } from "express"
+import UserModel from "../models/user"
 import crypto from "crypto"
 const mailer = require("../models/mailer")
 
 
-class UsuarioController {
-    public async cadastrar(req: Request, res: Response): Promise<Response> {
-        const user = await UsuarioModel.create(req.body);
+class UserController {
+    public async cadastrar(req: Request, res: Response){
+        const user = await UserModel.create(req.body);
         const mensagem = {
-            message: 'Usuario cadastrado com sucesso!',
+            message: 'Registration success!',
             _id: user._id,
-            nome: user.nome,
+            name: user.name,
+            fone: user.fone,
             email: user.email,
-            senha: user.senha
+            password: user.password
         }
-        return res.json(mensagem);
+        return res.json(mensagem)
+    }
+    
+    public async listaUser(req: Request, res: Response): Promise<Response>{
+        const users = await UserModel.find(req.body)
+        return res.json(users)
     }
 
     public async autenticar(req: Request, res: Response): Promise<Response> {
-        const { nome, senha } = req.body;
+        const { name, password } = req.body
 
-        const user = await UsuarioModel.findOne({ nome });
+        const user = await UserModel.findOne({ name });
         if (!user) {
-            return res.status(400).send({ message: 'Usuario nao encontrado!'});
+            return res.status(400).send({ error: 'User not found!'});
         }
         
-        const senhaValida = await user.compararSenhas(senha);
+        const senhaValida = await user.compararSenhas(password);
         if (!senhaValida) {
-            return res.status(400).send({ message: 'Senha invalida!'});
+            return res.status(400).send({ error: 'Password invalid!'});
         }
         
         return res.json({
             user: user,
             token: user.gerarToken()
-        });
+        })
     }
     
-    public async listaUser(req: Request, res: Response): Promise<Response>{
-        const users = await UsuarioModel.find(req.body);
-        return res.json(users);
-    }
     
-    public async esqueciSenha(req: Request, res: Response): Promise<Response>{
-        const { email } = req.body;
+    public async enviaValidacaoEmail(req: Request, res: Response): Promise<Response>{
+        const { email } = req.body
         try {
-            const user = await UsuarioModel.findOne({ email });
+            const user = await UserModel.findOne({ email })
 
             if (!user) {
-                return res.status(400).send({ message: 'Usuario nao encontrado!' });
+                return res.status(400).send({ error: 'User not found!' })
             }
 
-            const token = crypto.randomBytes(20).toString('hex');
+            const token = crypto.randomBytes(5).toString('hex')
 
-            const now = new Date();
-            now.setHours(now.getHours() + 1);
+            const now = new Date()
+            now.setHours(now.getHours() + 2)
 
-            await UsuarioModel.findByIdAndUpdate(user._id, {
+            await UserModel.findByIdAndUpdate(user._id, {
                 '$set': {
-                    senhaResetToken: token,
-                    senhaResetExpires: now,
+                    validEmailToken: token,
+                    validEmailExpires: now,
                 }
-            });
+            })
 
             mailer.sendMail({
                 to: email,
                 from:'aman@gmail',
-                subject: "Esqueci minha senha",
-                text: "Para redefinir a senha use o Token: " + token,
+                subject: "Validação de email",
+                text: "Para validar seu usuário use o Token: " + token,
             }), (err) => {
                 if (err)
-                    return res.status(400).send({ message: 'Desculpe algo deu errado!'});
+                    return res.status(400).send({ error: 'There was a problem!' })
                 
-                return res.send();
+                return res.send()
             }
             
             return res.json({
-                senhaResetToken: token,
-                senhaResetExpires: now
-            });
+                validEmailToken: token,
+                validEmailExpires: now
+            })
 
         } catch (error) {
-            return res.status(400).send({ message: 'Desculpe algo deu errado!'});
+            return res.status(400).send({ error: 'There was a problem!' })
         }
     }
-
-    public async resetSenha(req: Request, res: Response): Promise<Response> {
-        const { email, token, senha } = req.body;
-
-        const user = await UsuarioModel.findOne({ email })
-            .select('+senhaResetToken senhaResetExpires');
         
-        if (!user)
-                return res.status(400).send({ message: 'Usuario nao encontrado!' })
+    public async validaEmail(req: Request, res: Response){
+        const { email, token } = req.body
 
-        if (token !== user.senhaResetToken)
-                return res.status(400).send({ message: 'Token nao valido!' })
-        
-        const now = new Date();
-
-        if (now > user.senhaResetExpires)
-            return res.status(400).send({ message: 'Token Expirou!' })
+        try {
+            const user = await UserModel.findOne({ email })
+                .select('+validEmailToken validEmailExpires')
             
-            user.senha = senha;
+            if (!user)
+                    return res.status(400).send({ error: 'User not found!' })
+    
+                    if (token !== user.validEmailToken)
+                    return res.status(400).send({ error: 'Token not valid!' })
+                    
+            const now = new Date()
             
-            await user.save();
+            if (now > user.validEmailExpires)
+                return res.status(400).send({ error: 'Token Expires!' })
+                
+            if (token == user.validEmailToken)
+            return res.status(200).send({ error: 'Email is valid!' })
             
-        return res.status(200).send({ message: 'Senha alterada com sucesso!' })
-    }    
-
+        } catch (error) {
+            return res.status(400).send({ error: 'There was a problem!' })
+        }
 
 }
 
-export default new UsuarioController();
+export default new UserController()

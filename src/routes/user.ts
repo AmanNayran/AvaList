@@ -1,12 +1,11 @@
-import { Router } from "express";
-import usuarioController from '../controller/user'
+import { Router } from "express"
+import UserController from '../controller/user'
 
-const userRoute = Router();
+const userRoute = Router()
 
-userRoute.post('/singup', usuarioController.cadastrar)
-userRoute.post('/singin', usuarioController.autenticar)
-userRoute.get('/list', usuarioController.listaUser)
-userRoute.post('/forgot', usuarioController.esqueciSenha)
-userRoute.post('/reset', usuarioController.resetSenha)
+userRoute.post('/singup', UserController.cadastrar)
+userRoute.get('/list', UserController.listaUser)
+userRoute.post('/singin', UserController.autenticar)
 
-export default userRoute;
+
+export default userRoute
